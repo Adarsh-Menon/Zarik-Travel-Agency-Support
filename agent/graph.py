@@ -1,3 +1,4 @@
+import os
 import json
 from langgraph.graph import StateGraph, END
 from langchain_groq import ChatGroq
@@ -11,14 +12,19 @@ from agent.prompts import (
 from memory.store import load_memory, save_memory, update_memory_from_trip
 from leads.excel_manager import add_lead, update_lead, find_lead_by_telegram_id
 from tools.itinerary_gen import generate_itinerary, modify_itinerary
-from config import GROQ_API_KEY, GROQ_MODEL
 
-llm = ChatGroq(
-    model=GROQ_MODEL,
-    api_key=GROQ_API_KEY,
-    temperature=0.6,
-    max_tokens=2048,
-)
+_llm = None
+
+def _get_llm():
+    global _llm
+    if _llm is None:
+        _llm = ChatGroq(
+            model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0.6,
+            max_tokens=2048,
+        )
+    return _llm
 
 REQUIRED_FIELDS = ["destination", "travel_dates", "duration_days", "budget", "group_size", "interests"]
 
@@ -36,7 +42,7 @@ def _extract_preferences(message: str, existing: dict) -> dict:
     logger = logging.getLogger("zarik.extract")
 
     try:
-        response = llm.invoke([
+        response = _get_llm().invoke([
             SystemMessage(content=(
                 "You are a JSON extraction bot. Extract travel preferences from the user message. "
                 "Return ONLY a raw JSON object. No markdown, no backticks, no explanation. "
@@ -87,7 +93,7 @@ def greet_node(state: AgentState) -> dict:
 
     prompt = GREETING_PROMPT.format(memory=json.dumps(memory, indent=2) if is_returning else "New user")
 
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_PROMPT.format(phase="greeting")),
         HumanMessage(content=prompt),
     ])
@@ -158,7 +164,7 @@ def collect_node(state: AgentState) -> dict:
         missing=", ".join(missing),
     )
 
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_PROMPT.format(phase="collecting preferences")),
         *state["messages"][-6:],  # last 3 turns for context
         HumanMessage(content=prompt),
@@ -242,7 +248,7 @@ def followup_node(state: AgentState) -> dict:
     prompt = FOLLOWUP_PROMPT.format(
         itinerary_summary=state.get("itinerary", "")[:500],
     )
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content=SYSTEM_PROMPT.format(phase="followup")),
         *state["messages"][-4:],
         HumanMessage(content=prompt),

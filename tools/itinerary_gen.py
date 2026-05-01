@@ -1,14 +1,20 @@
+import os
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from agent.prompts import ITINERARY_PROMPT, MODIFICATION_PROMPT
-from config import GROQ_API_KEY, GROQ_MODEL
 
-llm = ChatGroq(
-    model=GROQ_MODEL,
-    api_key=GROQ_API_KEY,
-    temperature=0.7,
-    max_tokens=4096,
-)
+_llm = None
+
+def _get_llm():
+    global _llm
+    if _llm is None:
+        _llm = ChatGroq(
+            model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0.7,
+            max_tokens=4096,
+        )
+    return _llm
 
 
 def generate_itinerary(preferences: dict) -> str:
@@ -23,7 +29,7 @@ def generate_itinerary(preferences: dict) -> str:
         special_requests=preferences.get("special_requests", "None"),
     )
 
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content="You are a world-class travel planner. Create detailed, practical itineraries."),
         HumanMessage(content=prompt),
     ])
@@ -37,7 +43,7 @@ def modify_itinerary(current_itinerary: str, modification: str, preferences: dic
         preferences=str(preferences),
     )
 
-    response = llm.invoke([
+    response = _get_llm().invoke([
         SystemMessage(content="You are a world-class travel planner. Modify itineraries based on feedback."),
         HumanMessage(content=prompt),
     ])
