@@ -2,6 +2,8 @@
 
 > An AI-powered Telegram bot that captures travel preferences through natural conversation, generates personalized day-by-day itineraries, remembers returning users, and manages leads in Excel — all orchestrated by a LangGraph stateful agent.
 
+![Zarik Demo](resources/Zarik.gif)
+
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
 ![LangGraph](https://img.shields.io/badge/LangGraph-Stateful_Agent-purple)
 ![Groq](https://img.shields.io/badge/LLM-Groq_Llama_3.3-orange?logo=meta)
