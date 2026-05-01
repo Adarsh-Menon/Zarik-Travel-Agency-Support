@@ -1,4 +1,5 @@
 .env
 my_env
 .env
-.venv
+.venv"*.gif" 
+"*.js.download" 
